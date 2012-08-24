@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<project name="iLiriumUtils library" default="help" basedir=".">
+	
+	<description>    
+		Build script for iLiriumUtils library
+	</description>
+	
+	<!-- Task definition -->
+	<property file="build.properties" />
+	<path id="deployer.classpath">
+		<fileset dir="${ant.basedir}/lib">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+	
+	<!-- Application name -->
+	<property name="name" value="${iLiriumUtils.name}" />
+		
+	<!-- Application version -->
+	<property name="version" value="${iLiriumUtils.version}" />
+	
+	<!-- Build directory -->
+	<property name="build" location="${basedir}/build" />
+	<property name="build.classes" location="${build}/classes" />
+	<property name="build.src" location="${build}/src" />
+	<property name="release" location="${basedir}/release" />
+	
+	
+	
+	
+	
+	
+	
+	
+	<target name="clean" description="Delete all that was previously generated">
+			<echo>.: CLEAN :.</echo>
+			<!-- Delete the ${build} and ${relase} directory trees -->
+			<delete dir="${build}" />
+			<delete dir="${release}" />			
+	</target>
+	
+	
+	
+	
+	
+	<target name="init" depends="clean">
+		<!-- Create the time stamp -->
+        <filter token="version" value="${version}" /> 
+		<tstamp>
+			<format property="DATE" pattern="dd.MM.yyyy. H:m:s" />
+		</tstamp>
+	</target>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<target name="presrc" description="Set source directory">
+		
+		<!-- Prepare source files for all clients -->
+		<mkdir dir="${build}" />
+		<mkdir dir="${build}/src" />
+		<mkdir dir="${build.classes}" />
+		
+		<!--
+		
+		<filter token="version" value="${version}" />
+		<filter token="date" value="${DATE}" />
+
+		<copy todir="${build}/src" filtering="true">
+			<fileset dir="${src}" />
+		</copy>
+		-->
+		
+		
+		<copy todir="${build}/src" filtering="true">
+			<fileset dir="${src}" />
+		</copy>
+		
+	</target>
+	
+	
+	
+	
+	
+	
+	
+	<target name="compile" depends="init,presrc" description="Compile the src directory and make jar file">
+			
+		<javac srcdir="${build.src}" 
+			destdir="${build.classes}" 
+			target="1.5"
+			debug="true">
+			<classpath refid="project.classpath" />
+		</javac>
+			
+	    <copy todir="${build.classes}">
+	    	<fileset dir="${build.src}" includes="**/*.xml,**/*.properties" />
+		</copy>
+			
+		<!--
+		<copy todir="${build.classes}">
+			<fileset dir="${src.war.classes}" includes="**/Strings*.properties" />
+		</copy>
+		-->
+		
+		<!-- Change the version -->
+		<manifest file="${build}\Manifest.mf">
+			<attribute name="Created-By" value="${user.name} ${DATE}" />
+			<attribute name="Specification-Title" value="iLiriumUtils" />
+			<attribute name="Application-Version" value="${name} ver. ${version}" />
+			<attribute name="Copyright" value="iLiriumUtils d.o.o., www.iLirium.com" />
+		</manifest>
+
+		<delete file="${build}\Manifest.mf" />
+	</target>
+	
+	
+	
+	
+	
+	
+	
+	
+	<target name="help" depends="" description="Application help">
+		<echo message="" />
+		<echo message="Ant build file for iLiriumUtils" />
+		<echo message="" />
+		<echo message="-------------------------------------------------------------" />
+		<echo message=" Options:" />
+		<echo message="" />
+		<echo message="   clean    --> delete all generated and temp files" />
+		<echo message="   compile  --> generate new servlet jar" />
+		<echo message="   dist     --> generate distribution" />
+		<echo message="" />
+		<echo message=" For more information, look comments in file build.xml." />
+		<echo message="-------------------------------------------------------------" />
+		<echo message="" />
+		<echo message="" />
+	</target>
+		
+</project>
+	
+	
