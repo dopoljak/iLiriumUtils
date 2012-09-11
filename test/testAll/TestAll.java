@@ -11,6 +11,7 @@ public class TestAll
 
 		// $JUnit-BEGIN$
 		suite.addTest(TestAllCommons.suite());
+		suite.addTest(TestAllConfigurations.suite());
 		suite.addTest(TestAllDateTime.suite());
 		suite.addTest(TestAllHttp.suite());		
 		suite.addTest(TestAllSecurity.suite());

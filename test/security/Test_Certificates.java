@@ -16,11 +16,11 @@ import com.iLirium.utils.security.Keys;
 
 public class Test_Certificates extends TestCase
 {
-	// TODO: maka real junit test with asserts
+	// TODO: rewrite asserts
 	public void test1() throws IOException, GeneralSecurityException
 	{
 		final String dn_subject = "CN=CN_Client, L=L_Zagreb, C=C_HR";
-		final String dn_issuer = "CN=CN_Root, L=L_Zagreb, C=C_HR";
+		final String dn_issuer  = "CN=CN_Root, L=L_Zagreb, C=C_HR";
 		
 		CertificateExtensions extensions = Certificates.generateExtensions();
 		
@@ -36,27 +36,25 @@ public class Test_Certificates extends TestCase
 		certificate.verify(issuerKP.getPublic());
 		
 		System.out.println("Certificate = " + certificate);
-		
-		
+
 		// create key store
 		String password = "password1!";
 		KeyStore keyStore = KeyStore.getInstance("JKS");
 		keyStore.load(null, password.toCharArray());		
-				
+
 		Certificates.addCertificateToKeyStore(keyStore, "subject01", certificate, subjectKP.getPrivate(), password);
 		Certificates.addCertificateToKeyStore(keyStore, "rootCert", certificateRoot, issuerKP.getPrivate(), password);
-		
-		
+
 		// dump data
 		Enumeration<String> aliases = keyStore.aliases();
-		while(aliases.hasMoreElements()) 
+		while(aliases.hasMoreElements())
 		{
-			String alias = (String) aliases.nextElement();
+			String alias = (String)aliases.nextElement();
 			boolean privKey = keyStore.isKeyEntry(alias);
 			boolean certKey = keyStore.isCertificateEntry(alias);
 			
 			System.out.println("ALIAS: " + alias + " : IS PRIVATE = " + privKey + " IS CERT = " + certKey);
-			if(certKey) 
+			if(certKey)
 			{
 				X509Certificate cert = (X509Certificate) keyStore.getCertificate(alias);
 				cert.checkValidity();				
@@ -64,11 +62,8 @@ public class Test_Certificates extends TestCase
 				System.out.println("CERT INFO: " + cert.getSubjectDN() + ", ThumbPrint: " + Strings.toHEX(Certificates.getSha1ThumbPrint(cert)));
 			}
 		}
-		
-		
+
 		// save to file
-		
 		Certificates.saveKeyStore("C:\\testKeyStore.java", keyStore, password);
-		
 	}
 }
