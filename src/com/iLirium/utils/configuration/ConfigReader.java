@@ -7,11 +7,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+
+import org.apache.log4j.Logger;
+
 
 
 /**
@@ -25,6 +29,14 @@ import javax.naming.NamingException;
  */
 public final class ConfigReader
 {
+	static class log
+	{
+		static void info(String ...args) {};
+		static void debug(String ...args) {};
+		static void trace(String ...args) {};
+		static void trace(Object ...args) {};
+	}
+	
 	public static final String CONFIG_JNDI_NAME		= "CONFIG_JNDI_NAME";
 	public static final String CONFIG_DB_URI 		= "CONFIG_DB_URI";
 	public static final String CONFIG_DB_USERNAME 	= "CONFIG_DB_USERNAME";
@@ -32,9 +44,62 @@ public final class ConfigReader
 	public static final String CONFIG_DB_CLASS 		= "CONFIG_DB_CLASS";
 	public static final String CONFIG_DB_SELECT 	= "CONFIG_DB_SELECT";
 
-	private static final HashMap<String, String>	loadedConfig		= new HashMap<>();
-	private static final HashMap<String, String>	loadedConfigFrom	= new HashMap<>();
-	
+	private final HashMap<String, String>	loadedConfig		= new HashMap<>();
+	private final HashMap<String, String>	loadedConfigFrom	= new HashMap<>();
+
+	public ConfigReader(Class<?> clazz, Object servletContext) throws IllegalArgumentException, IllegalAccessException
+	{
+		// get all properties from received class
+		log.debug(":::::::: LOADING 0 PRIORITY DEFAULT PROPERTIES :::::::::");
+		for (Field f : clazz.getDeclaredFields()) 
+		{
+			if (f.getType() == String.class || f.getType() == Boolean.class || f.getType() == Integer.class)
+			{
+				f.setAccessible(true);
+				String value = f.get(null) == null ? null : String.valueOf(f.get(null));
+				loadedConfig.put(f.getName(), value);
+				loadedConfigFrom.put(f.getName(), "PRIORITY 0 DEFAULT ");
+				log.trace("DEFAULT : Key = " + f.getName() + ", Value = " + value);
+			}
+		}
+		
+		/** get Servlet Context parameters **/
+		loadServletContextParameters(servletContext);
+
+		/** get JNDI parameters **/		
+		try {
+			loadJNDIParameters();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		/** get DATABASE highest priority database parameters **/
+		try {
+			loadDatabaseParameters();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+
+		for (Field f : clazz.getDeclaredFields()) 
+		{
+			f.setAccessible(true);
+			String value = getString(f.getName());
+
+			if (f.getType() == String.class) {
+				f.set(null, value);
+			}
+			else if (f.getType() == Boolean.class) {
+				f.set(null, Boolean.valueOf(value));
+			}
+			else if (f.getType() == Integer.class) {
+				f.set(null, Integer.valueOf(value));
+			}
+		}
+	}
 	
 	/**
 	 * Load parameters from all configuration sources by default priority
@@ -44,12 +109,12 @@ public final class ConfigReader
 	 */
 	public ConfigReader(HashMap<String, String> defaultConfig, Object servletContext)
 	{
-		System.out.println(":::::::: LOADING 0 PRIORITY DEFAULT PROPERTIES :::::::::");
+		log.debug(":::::::: LOADING 0 PRIORITY DEFAULT PROPERTIES :::::::::");
 		for (Map.Entry<String, String> entry : defaultConfig.entrySet()) 
 		{
 			loadedConfig.put(entry.getKey(), entry.getValue());
 			loadedConfigFrom.put(entry.getKey(), "PRIORITY 0 DEFAULT ");
-			System.out.println("DEFAULT : Key = " + entry.getKey() + ", Value = " + entry.getValue());
+			log.trace("DEFAULT : Key = " + entry.getKey() + ", Value = " + entry.getValue());
 		}
 
 		/** get Servlet Context parameters **/
@@ -80,7 +145,7 @@ public final class ConfigReader
 	{
 		if (servletContext != null) 
 		{
-			System.out.println(":::::::: LOADING 1 PRIORITY WEB.XML PROPERTIES :::::::::");
+			log.debug(":::::::: LOADING 1 PRIORITY WEB.XML PROPERTIES :::::::::");
 			for (String key : loadedConfig.keySet())
 			{
 				try 
@@ -92,11 +157,11 @@ public final class ConfigReader
 					{
 						loadedConfig.put(key, value);
 						loadedConfigFrom.put(key, "PRIORITY 1 WEB.XML ");
-						System.out.println("WEB.XML : Key = " + key + ", Value = " + value);
+						log.trace("WEB.XML : Key = " + key + ", Value = " + value);
 					}
 				}
 				catch (Exception e) {
-					e.printStackTrace();
+					log.trace("Error loading WEX.XML properties ", e);
 				}
 			}
 		}
@@ -111,7 +176,7 @@ public final class ConfigReader
 		String jndi = loadedConfig.get(CONFIG_JNDI_NAME);
 		if(jndi != null) 
 		{
-			System.out.println(":::::::: LOADING 2 PRIORITY JNDI RESOURCE PROPERTIES :::::::::");
+			log.debug(":::::::: LOADING 2 PRIORITY JNDI RESOURCE PROPERTIES :::::::::");
 			
 			Context env = (Context)new InitialContext().lookup("java:comp/" + jndi);
 			
@@ -122,7 +187,7 @@ public final class ConfigReader
 				{
 					loadedConfig.put(key, value);
 					loadedConfigFrom.put(key, "PRIORITY 2    JNDI ");
-					System.out.println("JNDI    : Key = " + key + ", Value = " + value);
+					log.trace("JNDI    : Key = " + key + ", Value = " + value);
 				}
 			}			
 		}
@@ -143,7 +208,7 @@ public final class ConfigReader
 
 		if(db_url != null && !db_url.isEmpty()) 
 		{
-			System.out.println(":::::::: LOADING 3 PRIORITY DATABASE PROPERTIES :::::::::");
+			log.debug(":::::::: LOADING 3 PRIORITY DATABASE PROPERTIES :::::::::");
 			
 			Class.forName(db_class);
 			Connection connection = DriverManager.getConnection(db_url, db_user, db_pass);
@@ -158,7 +223,7 @@ public final class ConfigReader
 				{
 					loadedConfig.put(key, value);
 					loadedConfigFrom.put(key, "PRIORITY 3 DATABASE");
-					System.out.println("DATABASE : Key = " + key + ", Value = " + value);
+					log.trace("DATABASE : Key = " + key + ", Value = " + value);
 				}				
 			}
 
@@ -176,7 +241,7 @@ public final class ConfigReader
 	public String toString()
 	{
 		final String pre_append = "%-30s";
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(System.getProperty("line.separator"));
 		for (Map.Entry<String, String> entry : loadedConfig.entrySet())
 		{
 			sb.append("LOADED FROM - ").append(loadedConfigFrom.get(entry.getKey()));
@@ -201,6 +266,22 @@ public final class ConfigReader
 	public String getString(String key)
 	{
 		return (loadedConfig.get(key));
+	}
+	
+	/**
+	 * Get parameter as Boolean value
+	 */
+	public Boolean getBool(String key)
+	{
+		String value = loadedConfig.get(key);
+		
+		if(value == null)
+			return null;
+		
+		if(value.equalsIgnoreCase("1") || value.equalsIgnoreCase("true") || value.equalsIgnoreCase("ok") || value.equalsIgnoreCase("yes"))
+			return true;
+		
+		return false;
 	}
 	
 }
