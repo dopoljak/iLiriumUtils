@@ -25,6 +25,15 @@ public class Strings
 		}
 		return new String(output);
 	}
+	
+	public static String toHEX(byte[] ...array)
+	{
+		StringBuilder sb = new StringBuilder();
+		for (byte[] bs : array) {
+			sb.append(toHEX(bs));
+		}		
+		return sb.toString();
+	}
 
 	/**
 	 * Byte to Hex String
@@ -107,6 +116,21 @@ public class Strings
 		
 		// add data ... 
 
+		return sb.toString();
+	}
+	
+	
+	public static String append(String data, char append, int num)
+	{
+		final int currLen = data.length();
+		final StringBuilder sb = new StringBuilder(num);
+		
+		for (int i = currLen; i < num; i++) {
+			sb.append(append);
+		}
+
+		sb.append(data);
+		
 		return sb.toString();
 	}
 }

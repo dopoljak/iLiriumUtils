@@ -4,6 +4,7 @@ package commons;
 import java.util.Arrays;
 
 import com.iLirium.utils.commons.Strings;
+import com.iLirium.utils.datetime.StopWatch;
 
 import junit.framework.TestCase;
 
@@ -91,9 +92,49 @@ public class Test_Strings  extends TestCase
 		
 		String result = Strings.format(data, text1, text2);
 		
-		assertEquals(finalResult, result);
-		
-		
-		
+		assertEquals(finalResult, result);	
 	}
+	
+	
+	public void test6_append()
+	{
+		long rounds = 10000;
+		
+		StopWatch timer = new StopWatch();
+		for (int i = 0; i < rounds; i++) {
+			String data = "1";
+			String result = Strings.append(data, '0', 10);
+		}		
+		System.out.println("time1 = " + timer.getFormatedInlineTime());
+		
+		
+		for (int i = 0; i < rounds; i++) {
+			String data = "1";
+			String result = String.format("%10s", data);
+		}		
+		System.out.println("time2 = " + timer.getFormatedInlineTime());
+		
+		
+		for (int i = 0; i < rounds; i++) {
+			String data = "1";
+			String result = Strings.append(data, '0', 10);	
+		}		
+		System.out.println("time3 = " + timer.getFormatedInlineTime());
+		
+		
+		
+		
+		for (int i = 0; i < rounds; i++) {
+			String data = "1";
+			String result = String.format("%10s", data);
+		}		
+		System.out.println("time4 = " + timer.getFormatedInlineTime());
+		
+		
+		String data = "1";
+		String result = Strings.append(data, '0', 10);
+		
+		System.out.println("" + result);
+	}
+	
 }

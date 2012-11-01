@@ -31,7 +31,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import sun.security.util.ObjectIdentifier;
+import com.iLirium.utils.commons.Base64;
+import com.iLirium.utils.commons.Strings;
+
 import sun.security.x509.AlgorithmId;
 import sun.security.x509.BasicConstraintsExtension;
 import sun.security.x509.CertificateAlgorithmId;
@@ -52,6 +54,26 @@ import sun.security.x509.X509CertInfo;
  */
 public class Certificates
 {
+	/**
+	 * Create PEM certificate format
+	 * 
+	 * -----BEGIN CERTIFICATE REQUEST-----
+	 * .... BASE64 certificate ...
+	 * -----END CERTIFICATE REQUEST-----
+	 */
+	public static String createPEM(X509Certificate cert) throws IOException, CertificateEncodingException
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append("-----BEGIN CERTIFICATE REQUEST-----");
+		sb.append(Strings.NEWLINE);
+		String base64Certificate = Base64.encodeToString(cert.getEncoded(), true);
+		sb.append(base64Certificate);
+		sb.append(Strings.NEWLINE);
+		sb.append("-----END CERTIFICATE REQUEST-----");
+		sb.append(Strings.NEWLINE);
+		return sb.toString();
+	}
+	
 	/**
 	 * Load Java KeyStore from File
 	 */
@@ -163,23 +185,35 @@ public class Certificates
 	/**
 	 * Helper function for generating certificate extensions 
 	 **/
-	public static CertificateExtensions generateExtensions() throws IOException
+	public static CertificateExtensions generateSampleExtensions(boolean isCa) throws IOException
 	{
 		final CertificateExtensions extensions = new CertificateExtensions();
 
 		// key usage extensions
 		final KeyUsageExtension kue = new KeyUsageExtension();
-		kue.set(KeyUsageExtension.KEY_AGREEMENT, true);
-		kue.set(KeyUsageExtension.KEY_ENCIPHERMENT, true);
 		kue.set(KeyUsageExtension.CRL_SIGN, true);
 		kue.set(KeyUsageExtension.DATA_ENCIPHERMENT, true);
 		kue.set(KeyUsageExtension.DIGITAL_SIGNATURE, true);
-		kue.set(KeyUsageExtension.NON_REPUDIATION, true);		
-		BasicConstraintsExtension basicConstraintExt = new BasicConstraintsExtension(false, 1);
+		//kue.set(KeyUsageExtension.IDENT, true);
+		kue.set(KeyUsageExtension.KEY_AGREEMENT, true);
+		kue.set(KeyUsageExtension.KEY_CERTSIGN, true);
+		kue.set(KeyUsageExtension.KEY_ENCIPHERMENT, true);
+		//kue.set(KeyUsageExtension.NAME, true);
+		kue.set(KeyUsageExtension.NON_REPUDIATION, true);
+
+		BasicConstraintsExtension basicConstraintExt = null;
+		
+		if(isCa) {
+			basicConstraintExt = new BasicConstraintsExtension(true, 1);
+			basicConstraintExt.set(BasicConstraintsExtension.IS_CA, Boolean.valueOf(true));
+		}
+		else
+			basicConstraintExt = new BasicConstraintsExtension(false, 1);
 
 		// add extensions
 		extensions.set(KeyUsageExtension.IDENT, kue);
 		extensions.set(BasicConstraintsExtension.IDENT, basicConstraintExt);
+		//extensions.set(BasicConstraintsExtension.NAME, basicConstraintExt);
 
 		return extensions;
 	}
@@ -190,7 +224,8 @@ public class Certificates
 	public static X509Certificate generateCertificate(String subject, KeyPair pair, String issuer, PrivateKey issuerKey, CertificateExtensions extensions, int daysValid) throws GeneralSecurityException, IOException
 	{
 		final String algorithm = "SHA1withRSA";
-		final ObjectIdentifier algorithmId = AlgorithmId.sha1WithRSAEncryption_oid;
+		AlgorithmId algo = AlgorithmId.get(algorithm);
+		//final ObjectIdentifier algorithmId = AlgorithmId.get(algorithm).getOID(); // AlgorithmId.sha1WithRSAEncryption_oid;
 
 		final X509CertInfo info = new X509CertInfo();
 		final Date from = new Date();
@@ -198,11 +233,10 @@ public class Certificates
 		final CertificateValidity interval = new CertificateValidity(from, to);
 		final BigInteger sn = new BigInteger(64, new SecureRandom());
 		final X500Name subjectName = new X500Name(subject);
-		AlgorithmId algo = new AlgorithmId(algorithmId);
 		
 		PrivateKey signerKey = null;
 		X500Name issuerName = null;		
-		if(issuer != null) {
+		if(issuer != null && issuerKey != null) {
 			issuerName = new X500Name(issuer);
 			signerKey = issuerKey;
 		}
@@ -218,8 +252,10 @@ public class Certificates
 		info.set(X509CertInfo.KEY, new CertificateX509Key(pair.getPublic()));
 		info.set(X509CertInfo.VERSION, new CertificateVersion(CertificateVersion.V3));
 		info.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(algo));
-		if(extensions != null)
+		
+		if(extensions != null) {
 			info.set(X509CertInfo.EXTENSIONS, extensions);
+		}
 
 		// Create signature
 		X509CertImpl cert = new X509CertImpl(info);

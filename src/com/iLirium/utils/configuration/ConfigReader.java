@@ -1,5 +1,7 @@
 package com.iLirium.utils.configuration;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -7,14 +9,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-
-import org.apache.log4j.Logger;
 
 
 
@@ -31,12 +29,11 @@ public final class ConfigReader
 {
 	static class log
 	{
-		static void info(String ...args) {};
-		static void debug(String ...args) {};
-		static void trace(String ...args) {};
+		static void info(Object ...args)  {};
+		static void debug(Object ...args) {};
 		static void trace(Object ...args) {};
 	}
-	
+
 	public static final String CONFIG_JNDI_NAME		= "CONFIG_JNDI_NAME";
 	public static final String CONFIG_DB_URI 		= "CONFIG_DB_URI";
 	public static final String CONFIG_DB_USERNAME 	= "CONFIG_DB_USERNAME";
@@ -44,8 +41,10 @@ public final class ConfigReader
 	public static final String CONFIG_DB_CLASS 		= "CONFIG_DB_CLASS";
 	public static final String CONFIG_DB_SELECT 	= "CONFIG_DB_SELECT";
 
-	private final HashMap<String, String>	loadedConfig		= new HashMap<>();
-	private final HashMap<String, String>	loadedConfigFrom	= new HashMap<>();
+	private final HashMap<String, String>	loadedConfig		= new HashMap<String, String>();
+	private final HashMap<String, String>	loadedConfigFrom	= new HashMap<String, String>();
+	
+	private int longestKeyName = 0;
 
 	public ConfigReader(Class<?> clazz, Object servletContext) throws IllegalArgumentException, IllegalAccessException
 	{
@@ -56,10 +55,13 @@ public final class ConfigReader
 			if (f.getType() == String.class || f.getType() == Boolean.class || f.getType() == Integer.class)
 			{
 				f.setAccessible(true);
+				String name = f.getName();
 				String value = f.get(null) == null ? null : String.valueOf(f.get(null));
-				loadedConfig.put(f.getName(), value);
-				loadedConfigFrom.put(f.getName(), "PRIORITY 0 DEFAULT ");
-				log.trace("DEFAULT : Key = " + f.getName() + ", Value = " + value);
+				loadedConfig.put(name, value);
+				loadedConfigFrom.put(name, "PRIORITY 0 DEFAULT ");
+				log.trace("DEFAULT : Key = " + name + ", Value = " + value);
+				if(name != null && name.length() > longestKeyName)
+					longestKeyName = name.length();
 			}
 		}
 		
@@ -112,9 +114,13 @@ public final class ConfigReader
 		log.debug(":::::::: LOADING 0 PRIORITY DEFAULT PROPERTIES :::::::::");
 		for (Map.Entry<String, String> entry : defaultConfig.entrySet()) 
 		{
-			loadedConfig.put(entry.getKey(), entry.getValue());
-			loadedConfigFrom.put(entry.getKey(), "PRIORITY 0 DEFAULT ");
-			log.trace("DEFAULT : Key = " + entry.getKey() + ", Value = " + entry.getValue());
+			String name = entry.getKey();
+			loadedConfig.put(name, entry.getValue());
+			loadedConfigFrom.put(name, "PRIORITY 0 DEFAULT ");
+			log.trace("DEFAULT : Key = " + name + ", Value = " + entry.getValue());
+			
+			if(name != null && name.length() > longestKeyName)
+				longestKeyName = name.length();
 		}
 
 		/** get Servlet Context parameters **/
@@ -206,25 +212,25 @@ public final class ConfigReader
 		String db_class = loadedConfig.get(CONFIG_DB_CLASS);
 		String db_select = loadedConfig.get(CONFIG_DB_SELECT);
 
-		if(db_url != null && !db_url.isEmpty()) 
+		if(db_url != null && !db_url.isEmpty())
 		{
 			log.debug(":::::::: LOADING 3 PRIORITY DATABASE PROPERTIES :::::::::");
-			
+
 			Class.forName(db_class);
 			Connection connection = DriverManager.getConnection(db_url, db_user, db_pass);
 			Statement statement = connection.createStatement();
 			ResultSet resultSet = statement.executeQuery(db_select);
-			
+
 			while (resultSet.next()) 
 			{
 				String key = resultSet.getString(1);
 				String value = resultSet.getString(2);
-				if(loadedConfig.get(key) != null && value != null) 
+				if(loadedConfig.get(key) != null && value != null)
 				{
 					loadedConfig.put(key, value);
 					loadedConfigFrom.put(key, "PRIORITY 3 DATABASE");
 					log.trace("DATABASE : Key = " + key + ", Value = " + value);
-				}				
+				}
 			}
 
 			resultSet.close();
@@ -240,13 +246,13 @@ public final class ConfigReader
 	@Override
 	public String toString()
 	{
-		final String pre_append = "%-30s";
+		String pre_append = "%-"+ longestKeyName +"s";
 		StringBuilder sb = new StringBuilder(System.getProperty("line.separator"));
 		for (Map.Entry<String, String> entry : loadedConfig.entrySet())
 		{
-			sb.append("LOADED FROM - ").append(loadedConfigFrom.get(entry.getKey()));
-			sb.append(" - Key = ").append(String.format(pre_append, entry.getKey()));
-			sb.append(" , Value = ").append(entry.getValue());
+			sb.append(loadedConfigFrom.get(entry.getKey()));
+			sb.append(" - ").append(String.format(pre_append, entry.getKey()));
+			sb.append(" = ").append(entry.getValue());
 			sb.append(System.getProperty("line.separator"));
 		}
 		return sb.toString();
@@ -278,8 +284,11 @@ public final class ConfigReader
 		if(value == null)
 			return null;
 		
-		if(value.equalsIgnoreCase("1") || value.equalsIgnoreCase("true") || value.equalsIgnoreCase("ok") || value.equalsIgnoreCase("yes"))
-			return true;
+		final String trueString[] = new String[] { "1", "true", "ok", "yes" };
+		for (String string : trueString) {
+			if(value.equalsIgnoreCase(string))
+				return true;
+		}
 		
 		return false;
 	}
