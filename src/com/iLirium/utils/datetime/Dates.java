@@ -52,7 +52,7 @@ public class Dates
 			sb.append(minutes).append("m ");
 		if (seconds > 0)
 			sb.append(seconds).append("s ");
-		if (milisec > 0)
+		if (milisec >= 0)
 			sb.append(milisec).append("ms");
 
 		return sb.toString();

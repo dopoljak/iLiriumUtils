@@ -109,7 +109,7 @@ public class ClassFinder
 	@SuppressWarnings("rawtypes")
 	private static Class[] getClasses(String packageName) throws ClassNotFoundException, IOException
 	{
-		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader(); //getClass().getClassLoader ....
 		assert classLoader != null;
 		if (packageName == null)
 			packageName = "";

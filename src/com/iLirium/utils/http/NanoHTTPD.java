@@ -13,6 +13,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLEncoder;
+import java.security.KeyStore;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Vector;
@@ -24,6 +25,11 @@ import java.util.TimeZone;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 
 /**
  * A simple, tiny, nicely embeddable HTTP 1.0 (partially 1.1) server in Java
@@ -68,7 +74,7 @@ import java.io.FileOutputStream;
  * See the end of the source file for distribution license
  * (Modified BSD licence)
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({ "unchecked", "unused" })
 public class NanoHTTPD
 {
 	// ==================================================
@@ -224,7 +230,31 @@ public class NanoHTTPD
 	{
 		myTcpPort = port;
 		this.myRootDir = wwwroot;
+		
 		myServerSocket = new ServerSocket( myTcpPort );
+
+		/*
+		SSLServerSocketFactory ssf = null;
+		try {			
+
+		String ksName = "C:/test.keystore";
+		char ksPass[] = "simulator".toCharArray();
+		char ctPass[] = "simulator".toCharArray();			
+		KeyStore ks = KeyStore.getInstance("JKS");
+		ks.load(new FileInputStream(ksName), ksPass);
+		KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+		kmf.init(ks, ctPass);
+		SSLContext sc = SSLContext.getInstance("TLS");
+		sc.init(kmf.getKeyManagers(), null, null);
+		ssf = sc.getServerSocketFactory();
+		//SSLServerSocket s = (SSLServerSocket) ssf.createServerSocket(8888);
+		
+		} 
+		catch (Exception e) {
+		}
+		myServerSocket = (SSLServerSocket) ssf.createServerSocket(myTcpPort);
+		*/
+		
 		myThread = new Thread( new Runnable()
 			{
 				public void run()
