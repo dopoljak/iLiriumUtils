@@ -95,7 +95,7 @@ public class Test_Strings  extends TestCase
 		assertEquals(finalResult, result);	
 	}
 	
-	
+	@SuppressWarnings("unused")
 	public void test6_append()
 	{
 		long rounds = 10000;
@@ -110,6 +110,7 @@ public class Test_Strings  extends TestCase
 		
 		for (int i = 0; i < rounds; i++) {
 			String data = "1";
+			
 			String result = String.format("%10s", data);
 		}		
 		System.out.println("time2 = " + timer.getFormatedInlineTime());

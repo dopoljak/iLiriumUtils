@@ -34,6 +34,10 @@ public final class ConfigReader
 		static void trace(Object ...args) {};
 	}
 
+	/** default parameters initialized by application **/
+	public static final String CONFIG_ROOT_PATH		= "CONFIG_ROOT_PATH";
+	
+	/** for configuration loading **/
 	public static final String CONFIG_JNDI_NAME		= "CONFIG_JNDI_NAME";
 	public static final String CONFIG_DB_URI 		= "CONFIG_DB_URI";
 	public static final String CONFIG_DB_USERNAME 	= "CONFIG_DB_USERNAME";
@@ -83,9 +87,47 @@ public final class ConfigReader
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
+		/** set main application parameters if the'r not previously override by other priority **/
+		try
+		{
+			Method m = servletContext.getClass().getMethod("getRealPath", new Class[]{ String.class });
+			m.setAccessible(true);
+			String value = (String) m.invoke(servletContext, new Object[] { "/" } );			
+			loadedConfig.put(CONFIG_ROOT_PATH, value);
+			loadedConfigFrom.put(CONFIG_ROOT_PATH, "PRIORITY 4  CONFIG ");
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 		
 
+			/*
+			System.out.println("name = " + f.getName() + ", value = " + value + ", equeals = " + f.getName().equals(ROOT_PATH));
+			
+			if(f.getType() == String.class && f.getName().equals(ROOT_PATH) && Strings.isBlank(value))
+			{
+				try
+				{
+					Method m = servletContext.getClass().getMethod("getRealPath", new Class[]{ String.class });
+					m.setAccessible(true);
+					value = (String) m.invoke(servletContext, new Object[] { "/" } );
+					
+					// reset Configuration class value
+					f.set(null, value);					
+					// reset global map value
+					loadedConfig.put(ROOT_PATH, value);
+					
+					System.out.println("###### LOADED ROOT PATH = " + value);
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+			}*/
+
+		
 		for (Field f : clazz.getDeclaredFields()) 
 		{
 			f.setAccessible(true);
@@ -293,4 +335,13 @@ public final class ConfigReader
 		return false;
 	}
 	
+	
+	/**
+	 * CONFIGURATION LOADED PARAMETERS
+	 */
+
+	public String getConfigRootPath()
+	{
+		return getString(CONFIG_ROOT_PATH);
+	}
 }
