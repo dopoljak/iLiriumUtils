@@ -11,6 +11,12 @@ import junit.framework.TestCase;
 
 public class Test_Strings  extends TestCase
 {	
+	public void test11_slf4j_formater()
+	{
+		System.out.println(Strings.format("Ovo je poruka = {}, = {}", "aaa", "bbb"));
+		System.out.println(Strings.format("Ovo je poruka = {}, = {}", 842L, 11));
+	}
+	
 	public void test1_hex2bytes2hex()
 	{
 		String hexInput = "0000000000000000";

@@ -1,5 +1,8 @@
 package com.iLirium.utils.commons;
 
+import org.slf4j.helpers.FormattingTuple;
+import org.slf4j.helpers.MessageFormatter;
+
 /**
  * @author dopoljak@gmail.com
  */
@@ -13,25 +16,31 @@ public class Strings
 	 */
 	public static String toHEX(byte[] input)
 	{
-		if (input == null) {
+		if (input == null)
+		{
 			return null;
 		}
 
 		int length = input.length;
 		char[] output = new char[2 * length];
-		for (int i = 0; i < length; ++i) {
+		for (int i = 0; i < length; ++i)
+		{
 			output[2 * i] = HEX[(input[i] & 0xF0) >>> 4];
 			output[2 * i + 1] = HEX[input[i] & 0x0F];
 		}
 		return new String(output);
 	}
-	
-	public static String toHEX(byte[] ...array)
+
+	/**
+	 * Convert byte arrays to HEX String
+	 */
+	public static String toHEX(byte[]... array)
 	{
 		StringBuilder sb = new StringBuilder();
-		for (byte[] bs : array) {
+		for (byte[] bs : array)
+		{
 			sb.append(toHEX(bs));
-		}		
+		}
 		return sb.toString();
 	}
 
@@ -53,7 +62,8 @@ public class Strings
 	{
 		int length = hexInput.length();
 		byte[] output = new byte[length / 2];
-		for (int i = 0; i < length; i += 2) {
+		for (int i = 0; i < length; i += 2)
+		{
 			output[i / 2] = (byte) ((Character.digit(hexInput.charAt(i), 16) << 4) + Character.digit(hexInput.charAt(i + 1), 16));
 		}
 		return output;
@@ -82,7 +92,7 @@ public class Strings
 	}
 
 	/**
-	 * Check if string contains [YES;TRUE;1] 
+	 * Check if string contains [YES;TRUE;1]
 	 */
 	public static boolean stringToBool(String s)
 	{
@@ -96,41 +106,38 @@ public class Strings
 	}
 
 	/**
-	 * Format simple string template with arguments 
-	 * (replace all '{}' with arguments) 
+	 * SLF4J style formatter
 	 */
-	public static String format(String data, String ...args)
+	public static String format(String message, Object obj1, Object obj2, Object obj3)
 	{
-		StringBuilder sb = new StringBuilder();
-
-		int index;
-		for (int i = 0; i < args.length; i++) 
-		{
-			index = data.indexOf("{}");			
-			if(index == -1)
-				break;
-			sb.append(data,0,index);
-			sb.append(args[i]);
-			data = data.substring(index+2);
-		}
-		
-		// add data ... 
-
-		return sb.toString();
+		FormattingTuple ft = MessageFormatter.arrayFormat(message, new Object[] { obj1, obj2, obj3 });
+		return ft.getMessage();
 	}
-	
-	
+
+	/**
+	 * SLF4J style formatter
+	 */
+	public static String format(String message, Object obj1, Object obj2)
+	{
+		FormattingTuple ft = MessageFormatter.arrayFormat(message, new Object[] { obj1, obj2 });
+		return ft.getMessage();
+	}
+
+	/**
+	 * Append any number of characters to string
+	 */
 	public static String append(String data, char append, int num)
 	{
 		final int currLen = data.length();
 		final StringBuilder sb = new StringBuilder(num);
-		
-		for (int i = currLen; i < num; i++) {
+
+		for (int i = currLen; i < num; i++)
+		{
 			sb.append(append);
 		}
 
 		sb.append(data);
-		
+
 		return sb.toString();
 	}
 }
